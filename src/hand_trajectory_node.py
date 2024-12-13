@@ -27,6 +27,9 @@ class HandTrajectoryNode:
         # Initialize trajectory points list
         self.path_points = []
 
+        # Initialize the trajectory points to be published
+        self.path_points_pub = []
+
         # Initialize the timestamp for the last detected left hand
         self.last_left_hand_time = rospy.Time.now()
         self.last_right_hand_time = rospy.Time.now()
@@ -46,21 +49,16 @@ class HandTrajectoryNode:
             queue_size=10
         )
 
+        # Publisher for the trajectory image with white background and black trajectory
+        self.trajectory_pub = rospy.Publisher(
+            '/camera/color/image_handlandmark_trajectory',
+            Image,
+            queue_size=10
+        )
+
         rospy.loginfo("Hand Trajectory Node Initialized.")
         rospy.loginfo("Subscribed to: /camera/color/image_handlandmark/compressed")
         rospy.loginfo("Publishing to: /camera/color/image_handlandmark_processed")
-
-    def publish_trajectory(self, trajectory_image):
-        if trajectory_image is None:
-            return
-        try:
-            # Convert OpenCV image back to ROS Image message
-            processed_image_msg = self.bridge.cv2_to_imgmsg(trajectory_image, encoding='bgr8')
-            # Publish the processed image
-            self.image_pub.publish(processed_image_msg)
-            rospy.loginfo_throttle(5, "Published processed image.")
-        except CvBridgeError as e:
-            return
     
     def publish_detection(self, annotated_image):
         try:
@@ -71,6 +69,18 @@ class HandTrajectoryNode:
             rospy.loginfo_throttle(5, "Published processed image.")
         except CvBridgeError as e:
             rospy.logerr(f"CvBridge Error: {e}")
+            return
+            
+    def publish_trajectory(self, trajectory_image):
+        if trajectory_image is None:
+            return
+        try:
+            # Convert OpenCV image back to ROS Image message
+            processed_image_msg = self.bridge.cv2_to_imgmsg(trajectory_image, encoding='bgr8')
+            # Publish the processed image
+            self.trajectory_pub.publish(processed_image_msg)
+            rospy.loginfo_throttle(5, "Published processed image.")
+        except CvBridgeError as e:
             return
 
     def image_callback(self, msg):
@@ -136,27 +146,40 @@ class HandTrajectoryNode:
         time_diff_left = current_time - self.last_left_hand_time
         time_diff_right = current_time - self.last_right_hand_time
 
-        # Draw the trajectory of the right hand
+        # action based on hand presence
+        break_line = (2*image_width, 2*image_height)
         if time_diff_right.to_sec() > 0.1:
             self.path_points.clear()
             rospy.loginfo_throttle(5, "Cleared trajectory points due to absence of right hand.")
-            
+            self.path_points_pub = self.path_points
+
         elif time_diff_left.to_sec() > 0.1:
             rospy.loginfo_throttle(5, "Paused tracking due to presence of left hand.")
+            self.path_points.append(break_line)
+
         else:
             if right_hand_present:
                 self.path_points.append(right_index_fingertip)
             # Optionally, limit the number of points to prevent memory issues
             if len(self.path_points) > 200:
                 self.path_points.pop(0)
-            # Draw the trajectory on the image
-            for i in range(1, len(self.path_points)):
-                cv2.line(cv_image, self.path_points[i - 1], self.path_points[i], (255, 0, 0), 2)
+
+        # Draw the trajectory on the image
+        for i in range(1, len(self.path_points)):
+            if self.path_points[i] == break_line or self.path_points[i - 1] == break_line:
+                continue
+            cv2.line(cv_image, self.path_points[i - 1], self.path_points[i], (255, 0, 0), 2)
+        
+        trajectory_image = np.ones_like(cv_image) * 255
+        for i in range(1, len(self.path_points_pub)):
+            if self.path_points_pub[i] == break_line or self.path_points_pub[i - 1] == break_line:
+                continue
+            cv2.line(trajectory_image, self.path_points_pub[i - 1], self.path_points_pub[i], (255, 0, 0), 2)
         
 
         # Publish the processed image
         self.publish_detection(cv_image)
-        self.publish_trajectory(cv_image)
+        self.publish_trajectory(trajectory_image)
 
     def run(self):
         rospy.spin()
