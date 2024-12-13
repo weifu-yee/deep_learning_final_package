@@ -76,6 +76,11 @@ class HandTrajectoryNode:
         rospy.loginfo("Subscribed to: /camera/color/image_handlandmark/compressed")
         rospy.loginfo("Publishing to: /camera/color/image_handlandmark_processed")
     
+    def beyond_roi(self, x, y):
+        if x < self.roi['x'] or x > self.roi['x'] + self.roi['width'] or y < self.roi['y'] or y > self.roi['y'] + self.roi['height']:
+            return True
+        return False
+
     def publish_detection(self, annotated_image):
         try:
             # Convert OpenCV image back to ROS Image message
@@ -157,17 +162,25 @@ class HandTrajectoryNode:
                 self.mp_drawing.draw_landmarks(cv_image, hand_landmarks, self.mp_hands.HAND_CONNECTIONS)
 
                 if hand_label == 'Left':
+                    # if any inside roi, ignore
+                    ignore = True
+                    for landmark in hand_landmarks.landmark:
+                        x, y = landmark.x, landmark.y
+                        if not self.beyond_roi(x, y):
+                            ignore = False
+                    if ignore:
+                        continue
+
                     left_hand_present = True
                     # Update the timestamp since left hand is detected
                     self.last_left_hand_time = rospy.Time.now()
                 elif hand_label == 'Right':
-                    right_hand_present = True
                     # Get index finger tip landmark (id 8)
                     index_finger_tip = hand_landmarks.landmark[8]
                     x, y = index_finger_tip.x, index_finger_tip.y
 
                     # if out of roi, ignore
-                    if x < self.roi['x'] or x > self.roi['x'] + self.roi['width'] or y < self.roi['y'] or y > self.roi['y'] + self.roi['height']:
+                    if self.beyond_roi(x, y):
                         continue
                     
                     right_hand_present = True
