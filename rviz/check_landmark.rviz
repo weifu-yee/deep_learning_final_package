@@ -19,7 +19,6 @@ Visualization Manager:
       Transport Hint: raw
       Unreliable: false
       Value: true
-
     - Class: rviz/Image
       Enabled: true
       Image Topic: /hand_trajectory/trajectory
@@ -32,13 +31,11 @@ Visualization Manager:
       Transport Hint: raw
       Unreliable: false
       Value: true
-
     - Class: rviz/Message
       Enabled: true
       Message Topic: /hand_trajectory/state
       Name: Hand Landmark State
       Queue Size: 10
-      
   Enabled: true
   Global Options:
     Background Color: 48; 48; 48
@@ -55,7 +52,7 @@ Visualization Manager:
   Views:
     Current:
       Class: rviz/Orbit
-      Distance: 10
+      Distance: 9.899999618530273
       Enable Stereo Rendering:
         Stereo Eye Separation: 0.05999999865889549
         Stereo Focal Distance: 1
@@ -71,9 +68,9 @@ Visualization Manager:
       Invert Z Axis: false
       Name: Current View
       Near Clip Distance: 0.009999999776482582
-      Pitch: 0.7853981852531433
+      Pitch: 0.7803981900215149
       Target Frame: <Fixed Frame>
-      Yaw: 0.7853981852531433
+      Yaw: 0.7803981900215149
     Saved: ~
 Window Geometry:
   Hand Trajectory Image:
@@ -83,7 +80,7 @@ Window Geometry:
   Hide Right Dock: false
   Processed Hand Landmark Image:
     collapsed: false
-  QMainWindow State: 000000ff00000000fd000000010000000200000780000002fefc0100000002fb0000003a00500072006f006300650073007300650064002000480061006e00640020004c0061006e0064006d00610072006b00200049006d0061006700650100000000000003d10000011600fffffffb0000002a00480061006e00640020005400720061006a006500630074006f0072007900200049006d00610067006501000003d7000003a9000000d600ffffff000007800000005200000004000000040000000800000008fc0000000100000002000000010000000a0054006f006f006c00730100000000ffffffff0000000000000000
+  QMainWindow State: 000000ff00000000fd00000002000000000000045400000356fc0200000001fb0000003a00500072006f006300650073007300650064002000480061006e00640020004c0061006e0064006d00610072006b00200049006d006100670065010000003b000003560000001600ffffff000000010000030000000356fc0200000001fb0000002a00480061006e00640020005400720061006a006500630074006f0072007900200049006d006100670065010000003b000003560000001600ffffff000000200000035600000004000000040000000800000008fc0000000100000002000000010000000a0054006f006f006c00730100000000ffffffff0000000000000000
   Width: 1920
   X: 0
   Y: 32
