@@ -50,6 +50,29 @@ class HandTrajectoryNode:
         rospy.loginfo("Subscribed to: /camera/color/image_handlandmark/compressed")
         rospy.loginfo("Publishing to: /camera/color/image_handlandmark_processed")
 
+    def publish_trajectory(self, trajectory_image):
+        if trajectory_image is None:
+            return
+        try:
+            # Convert OpenCV image back to ROS Image message
+            processed_image_msg = self.bridge.cv2_to_imgmsg(trajectory_image, encoding='bgr8')
+            # Publish the processed image
+            self.image_pub.publish(processed_image_msg)
+            rospy.loginfo_throttle(5, "Published processed image.")
+        except CvBridgeError as e:
+            return
+    
+    def publish_detection(self, annotated_image):
+        try:
+            # Convert OpenCV image back to ROS Image message
+            processed_image_msg = self.bridge.cv2_to_imgmsg(annotated_image, encoding='bgr8')
+            # Publish the processed image
+            self.image_pub.publish(processed_image_msg)
+            rospy.loginfo_throttle(5, "Published processed image.")
+        except CvBridgeError as e:
+            rospy.logerr(f"CvBridge Error: {e}")
+            return
+
     def image_callback(self, msg):
         rospy.loginfo_throttle(5, "Image received.")
 
@@ -117,6 +140,7 @@ class HandTrajectoryNode:
         if time_diff_right.to_sec() > 0.1:
             self.path_points.clear()
             rospy.loginfo_throttle(5, "Cleared trajectory points due to absence of right hand.")
+            
         elif time_diff_left.to_sec() > 0.1:
             rospy.loginfo_throttle(5, "Paused tracking due to presence of left hand.")
         else:
@@ -130,27 +154,9 @@ class HandTrajectoryNode:
                 cv2.line(cv_image, self.path_points[i - 1], self.path_points[i], (255, 0, 0), 2)
         
 
-        # Optionally, display the number of tracked points
-        cv2.putText(
-            cv_image,
-            f"Tracked Points: {len(self.path_points)}",
-            (10, 30),
-            cv2.FONT_HERSHEY_SIMPLEX,
-            1,
-            (0, 255, 0),
-            2,
-            cv2.LINE_AA
-        )
-
-        try:
-            # Convert OpenCV image back to ROS Image message
-            processed_image_msg = self.bridge.cv2_to_imgmsg(cv_image, encoding='bgr8')
-            # Publish the processed image
-            self.image_pub.publish(processed_image_msg)
-            rospy.loginfo_throttle(5, "Published processed image.")
-        except CvBridgeError as e:
-            rospy.logerr(f"CvBridge Error: {e}")
-            return
+        # Publish the processed image
+        self.publish_detection(cv_image)
+        self.publish_trajectory(cv_image)
 
     def run(self):
         rospy.spin()
