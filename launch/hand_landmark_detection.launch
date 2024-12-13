@@ -1,0 +1,5 @@
+<launch>
+    <!-- Launch the hand landmark detection node -->
+    <!-- <node name="hand_landmark_detection" pkg="final" type="hand_landmark_node.py" output="screen" /> -->
+    <node name="hand_trajectory" pkg="final" type="hand_trajectory_node.py" output="screen"/>
+</launch>
