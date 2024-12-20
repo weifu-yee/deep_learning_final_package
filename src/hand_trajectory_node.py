@@ -12,6 +12,10 @@ class HandTrajectoryNode:
         # Initialize ROS node
         rospy.init_node('hand_trajectory_node', anonymous=True)
 
+        # Class variables to store feedback and letter data
+        self.feedback = "No feedback"
+        self.letter = "No letter"
+
         # Initialize CvBridge
         self.bridge = CvBridge()
 
@@ -50,6 +54,9 @@ class HandTrajectoryNode:
             CompressedImage,
             self.image_callback
         )
+
+        rospy.Subscriber("/hand_trajectory/feedback", String, self.feedback_callback)
+        rospy.Subscriber("/hand_trajectory/letter", String, self.letter_callback)
 
         # Publisher for the processed image (uncompressed)
         self.image_pub = rospy.Publisher(
@@ -120,6 +127,14 @@ class HandTrajectoryNode:
             2,
             cv2.LINE_AA
         )
+
+    def feedback_callback(self, msg):
+        """Callback for /hand_trajectory/feedback topic."""
+        self.feedback = msg.data
+
+    def letter_callback(self, msg):
+        """Callback for /hand_trajectory/letter topic."""
+        self.letter = msg.data
 
     def image_callback(self, msg):
         rospy.loginfo_throttle(5, "Image received.")
@@ -241,6 +256,14 @@ class HandTrajectoryNode:
                 continue
             cv2.line(trajectory_image, self.path_points_pub[i - 1], self.path_points_pub[i], (0, 0, 0), 2)
         
+        # Display the feedback and letter on the image
+        feedback_text = f"Feedback: {self.feedback}"
+        letter_text = f"Letter: {self.letter}"
+        # cv2.putText(cv_image, letter_text, (10, 110), cv2.FONT_HERSHEY_SIMPLEX, 1, (0, 255, 255), 2, cv2.LINE_AA)
+        cv2.putText(cv_image, letter_text, (10, 110), cv2.FONT_HERSHEY_SIMPLEX, 1, (0, 255, 255), 2, cv2.LINE_AA)
+        cv2.putText(cv_image, feedback_text, (10, 70), cv2.FONT_HERSHEY_SIMPLEX, 0.5, (0, 255, 255), 2, cv2.LINE_AA)
+
+
         # Publish the processed image
         self.publish_detection(cv_image)
         self.publish_trajectory(trajectory_image)

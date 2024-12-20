@@ -1,6 +1,7 @@
 <launch>
     <!-- Launch the hand landmark detection node -->
     <!-- <node name="hand_landmark_detection" pkg="final" type="hand_landmark_node.py" output="screen" /> -->
-    <node name="hand_trajectory" pkg="final" type="hand_trajectory_node.py" output="screen"/>
-    <node pkg="final" type="letter_distinguisher.py" name="image_processor" output="screen">
+    <node name="hand_trajectory" pkg="final" type="hand_trajectory_node.py"/>
+    <node pkg="final" type="letter_distinguisher.py" name="letter_distinguisher"/>
+    <node name="hand_ollama" pkg="final" type="ollama_node.py" output="screen"/>
 </launch>

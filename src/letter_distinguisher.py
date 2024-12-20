@@ -8,6 +8,7 @@ from PIL import Image as PILImage
 import torch.nn.functional as F
 import matplotlib.pyplot as plt
 import rospy
+from std_msgs.msg import String
 
 # Initialize the CvBridge
 bridge = CvBridge()
@@ -99,32 +100,55 @@ model = CNNModel(num_classes=26)
 model.load_state_dict(torch.load(model_path, map_location='cpu'))
 model.eval()
 
+# def trajectory_callback(msg):
+#     # This is where you can process the incoming message
+#     rospy.loginfo("Received hand trajectory message")
+    
+#     processed_img = preprocess_and_crop_image_from_ros_msg(msg)
+
+#     if processed_img is not None:
+#         # Do something with the processed image (e.g., further processing or inference)
+#         rospy.loginfo("Image processed successfully")
+#     # arr = preprocess_and_crop_image(img_path)
+
+#     # PyTorch input: channels_first
+#     torch_input = torch.from_numpy(processed_img).unsqueeze(0).unsqueeze(0)  # shape: (1, 1, 28, 28)
+#     with torch.no_grad():
+#         torch_pred = model(torch_input)
+#     torch_label = torch.argmax(torch_pred, dim=1).item()
+
+#     # # print(f"Image: {img_path}")
+#     print(f"  PyTorch Prediction: {decode_label(torch_label)} (index: {torch_label})")
+#     # print("-" * 50)
+
 def trajectory_callback(msg):
-    # This is where you can process the incoming message
     rospy.loginfo("Received hand trajectory message")
     
     processed_img = preprocess_and_crop_image_from_ros_msg(msg)
 
     if processed_img is not None:
-        # Do something with the processed image (e.g., further processing or inference)
         rospy.loginfo("Image processed successfully")
-    # arr = preprocess_and_crop_image(img_path)
+        # PyTorch input: channels_first
+        torch_input = torch.from_numpy(processed_img).unsqueeze(0).unsqueeze(0)  # shape: (1, 1, 28, 28)
+        with torch.no_grad():
+            torch_pred = model(torch_input)
+        torch_label = torch.argmax(torch_pred, dim=1).item()
 
-    # PyTorch input: channels_first
-    torch_input = torch.from_numpy(processed_img).unsqueeze(0).unsqueeze(0)  # shape: (1, 1, 28, 28)
-    with torch.no_grad():
-        torch_pred = model(torch_input)
-    torch_label = torch.argmax(torch_pred, dim=1).item()
-
-    # # print(f"Image: {img_path}")
-    print(f"  PyTorch Prediction: {decode_label(torch_label)} (index: {torch_label})")
-    # print("-" * 50)
+        # Decode label and publish it
+        letter = decode_label(torch_label)
+        rospy.loginfo(f"Predicted letter: {letter}")
+        letter_pub.publish(letter)
 
 def listener():
-    # Initialize the node
-    rospy.init_node('hand_trajectory_listener', anonymous=True)
+    global letter_pub
 
-    # Subscribe to the '/hand_trajectory/trajectory' topic
+    # Initialize the node
+    rospy.init_node('letter_distinguisher', anonymous=True)
+
+    # Create a publisher for the /hand_trajectory/letter topic
+    letter_pub = rospy.Publisher('/hand_trajectory/letter', String, queue_size=10)
+
+    # Subscribe to the /hand_trajectory/trajectory topic
     rospy.Subscriber("/hand_trajectory/trajectory", Image, trajectory_callback)
 
     # Spin to keep the node running
@@ -135,21 +159,3 @@ if __name__ == '__main__':
         listener()
     except rospy.ROSInterruptException:
         pass
-
-
-# image_paths = ["A7.png", "A8.png", "A9.png",
-#                "B7.png", "B8.png", "C7.png",
-#                "G7.png", "K7.png", "N7.png", "Q7.png", "V7.png"]
-
-# for img_path in image_paths:
-#     arr = preprocess_and_crop_image(img_path)
-
-#     # PyTorch input: channels_first
-#     torch_input = torch.from_numpy(arr).unsqueeze(0).unsqueeze(0)  # shape: (1, 1, 28, 28)
-#     with torch.no_grad():
-#         torch_pred = model(torch_input)
-#     torch_label = torch.argmax(torch_pred, dim=1).item()
-
-#     print(f"Image: {img_path}")
-#     print(f"  PyTorch Prediction: {decode_label(torch_label)} (index: {torch_label})")
-#     print("-" * 50)
